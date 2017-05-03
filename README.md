@@ -3,8 +3,8 @@
 
 使用方法：
 
-python crawler.py
+python crawler.py [username password]
 
-然后根据自己情况修改config.py
+或根据自己情况修改config.py
 
-再次 python crawler.py 即可
+python crawler.py 即可
