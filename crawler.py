@@ -87,7 +87,6 @@ def save(path, info):
 
     if os.path.exists(path) == False:
         os.mkdir(path)
-    print info
     writeIntoFiles(
         '{0}/{1}.{2}{3}'.format(
             path, 
