@@ -8,24 +8,24 @@ import os
 import re
 
 def configInit():
-
     if os.path.exists("config.py") == False:
         writeIntoFiles('config.py', 
-            '#encoding:utf-8\n'
-            'headers = {\n'
-            '    "Host": "leetcode.com", \n'
-            '    "Referer": "https://leetcode.com", \n'
-            '    "Connection": "close", \n'
-            '    "Accept": "application/json, text/javascript, */*; q=0.01", \n'
-            '    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0"\n'
-            '}\n'
-            'proxies = {\n'
-            '#    "https": "http://127.0.0.1:1080"\n'
-            '}\n'
-            'loginInfo = {\n'
-            '    "login": "", \n'
-            '    "password": ""\n'
-            '}\n'
+            '#encoding:utf-8\r\n'
+            'headers = {\r\n'
+            '    "Host": "leetcode.com", \r\n'
+            '    "Referer": "https://leetcode.com", \r\n'
+            '    "Connection": "close", \r\n'
+            '    "Accept": "application/json, text/javascript, */*; q=0.01", \r\n'
+            '    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0"\r\n'
+            '}\r\n'
+            'proxies = {\r\n'
+            '#    "https": "http://127.0.0.1:1080"\r\n'
+            '}\r\n'
+            'loginInfo = {\r\n'
+            '    "login": "", \r\n'
+            '    "password": ""\r\n'
+            '}\r\n'
+            'copyright = ""'
             )
         print 'edit your config.py'
         exit(0)
@@ -78,7 +78,29 @@ def getLatestAnswer(finished, index):
     htmlText = handleRequests('https://leetcode.com' + url).text
     finished[index]['code'] = re.search(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'", htmlText).group(1).decode('unicode-escape', errors='ignore')
 
-#def save(info):
+def save(path, info):
+    fileType = {
+        'cpp': '.cpp', 
+        'mysql': '.sql', 
+        'java': '.java'
+    }
+
+    if os.path.exists(path) == False:
+        os.mkdir(path)
+    print info
+    writeIntoFiles(
+        '{0}/{1}.{2}{3}'.format(
+            path, 
+            info['id'], 
+            info['title'], 
+            fileType[info['lang']]
+            ),
+        info['code']
+        )
+    print 'finished writeIntoFiles {0}.{1}'.format(
+            str(info['id']), 
+            info['title']
+        )
 
 if __name__=='__main__':
     # default config
@@ -86,10 +108,15 @@ if __name__=='__main__':
 
     with requests.Session() as session:
         session.keep_alive = False
-        problemsType = ['algorithms', 'database', 'shell', 'draft', 'system-design']
-        fileType = {'cpp': '.cpp', 'mysql': '.sql', 'java': '.java'}
+        problemsType = [
+            'algorithms', 
+            'database', 
+            'shell', 
+            'draft', 
+            'system-design'
+        ]
         finished = []
-
+        
         #login & get cookie
         userName = login()
         if userName != '':
@@ -104,5 +131,6 @@ if __name__=='__main__':
             addToFinishedList(finished, apiRet)
         print 'finished ' + str(len(finished)) + ' problem(s)'
 
-        getLatestAnswer(finished, 0)
-        print finished[0]
+        for i in range(len(finished)):
+            getLatestAnswer(finished, i)
+            save(userName, finished[i])
