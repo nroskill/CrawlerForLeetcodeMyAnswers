@@ -46,14 +46,14 @@ def writeIntoFiles(filepath, content):
     with open(filepath, 'w') as f:
         f.write(content)
 
-def login():
-    #get csrf cookie
+def login(problemsType):
     from config import loginInfo
+    #get csrf cookie
     result = handleRequests('https://leetcode.com/accounts/login/').text
+    #init problemsType
+    problemsType = re.findall(r'problemset/(.*)/">', result)
     #get csrf value
-    start = result.find('csrfmiddlewaretoken') + 28
-    end = result.find('\'', start)
-    loginInfo['csrfmiddlewaretoken'] = result[start:end]
+    loginInfo['csrfmiddlewaretoken'] = re.search(r"csrfmiddlewaretoken'\s*value='(.*)'", result).group(1)
     #login
     loginResult = handleRequests('https://leetcode.com/accounts/login/', 'POST', data = loginInfo).text
     if loginResult.find(r'form class="form-signin"') >= 0:
@@ -79,10 +79,18 @@ def getLatestAnswer(finished, index):
     finished[index]['code'] = re.search(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'", htmlText).group(1).decode('unicode-escape', errors='ignore')
 
 def save(path, info):
-    fileType = {
+    fileType = { 
         'cpp': '.cpp', 
+        'java': '.java', 
+        'python': '.py', 
+        'c': '.c', 
+        'csharp': '.cs', 
+        'javascript': '.js', 
+        'ruby': '.rb', 
+        'swift': '.swift', 
+        'golang': '.go', 
         'mysql': '.sql', 
-        'java': '.java'
+        'bash': '.sh'
     }
 
     if os.path.exists(path) == False:
@@ -97,7 +105,7 @@ def save(path, info):
         info['code']
         )
     print 'finished writeIntoFiles {0}.{1}'.format(
-            str(info['id']), 
+            info['id'], 
             info['title']
         )
 
@@ -107,17 +115,11 @@ if __name__=='__main__':
 
     with requests.Session() as session:
         session.keep_alive = False
-        problemsType = [
-            'algorithms', 
-            'database', 
-            'shell', 
-            'draft', 
-            'system-design'
-        ]
+        problemsType = []
         finished = []
         
         #login & get cookie
-        userName = login()
+        userName = login(problemsType)
         if userName != '':
             print userName + ' login success'
         else:
