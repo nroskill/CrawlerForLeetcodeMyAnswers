@@ -1,14 +1,12 @@
 #encoding:utf-8
 proxies = {
-    #"https": "http://127.0.0.1:1080"
+#    "https": "http://127.0.0.1:1080"
 }
 
 loginInfo = {
     "login": "", 
     "password": ""
 }
-
-copyright = ""
 
 #请勿修改下面的内容
 headers = {
@@ -87,3 +85,5 @@ codeSetting = {
         'suffix': '# '
     } 
 }
+
+processCountLimit = 10

@@ -2,13 +2,14 @@
 # By Nroskill
 # 爬自己leetcode上写过的题的答案
 
-import requests
 import json
+import multiprocessing
 import os
-import sys
 import re
+import requests
+import sys
 
-def handleRequests(url, method = 'GET', data = None):
+def handleRequests(session, url, method = 'GET', data = None):
     from config import proxies
     from config import headers
     result = ''
@@ -24,10 +25,10 @@ def writeIntoFiles(filepath, content):
     with open(filepath, 'w') as f:
         f.write(content)
 
-def login():
+def login(session):
     from config import loginInfo
     #login
-    loginResult = handleRequests('https://leetcode.com/accounts/login/', 'POST', data = loginInfo).text
+    loginResult = handleRequests(session, 'https://leetcode.com/accounts/login/', 'POST', data = loginInfo).text
     if loginResult.find(r'form class="form-signin"') >= 0:
         return ''
     else:
@@ -36,27 +37,24 @@ def login():
 def addToFinishedList(finished, apiRet):
     for pro in apiRet['stat_status_pairs']:
         if pro['status'] == 'ac':
-            finished.append({'id': pro['stat']['question_id'], 'title': pro['stat']['question__title_slug']})
+            finished.append({'id': pro['stat']['question_id'], 'title': pro['stat']['question__title_slug'].encode('utf-8')})
 
-def getLatestAnswer(finished, index):
-    apiRet = json.loads(handleRequests('https://leetcode.com/api/submissions/{0}/?format=json'.format(finished[index]['title'])).text)
+def getLatestAnswer(info, session):
+    apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/submissions/{0}/?format=json'.format(info['title'])).text)
     url = ''
     for i in apiRet['submissions_dump']:
         if i['status_display'] == 'Accepted':
-            finished[index]['lang'] = i['lang']
-            finished[index]['runtime'] = i['runtime']
+            info['lang'] = i['lang'].encode('utf-8')
+            info['runtime'] = i['runtime'].encode('utf-8')
             url = i['url']
             break
-    htmlText = handleRequests('https://leetcode.com' + url).text
-    finished[index]['code'] = re.search(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'", htmlText).group(1).decode('unicode-escape', errors='ignore')
+    htmlText = handleRequests(session, 'https://leetcode.com' + url).text
+    info['code'] = re.search(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'", htmlText).group(1).decode('unicode-escape', errors='ignore').encode('utf-8')
 
 def save(path, info, userName):
     from config import codeSetting
     if os.path.exists(path) == False:
         os.mkdir(path)
-    from config import copyright
-    if copyright != "":
-        copyright += '\r\n'
     writeIntoFiles(
         '{0}/{1}.{2}{3}'.format(
             path, 
@@ -69,30 +67,24 @@ def save(path, info, userName):
         '{2}By {3}\r\n'
         '{2}runtime {4}\r\n'
         '{2}language {5}\r\n'
-        '{2}{6}'
-        '{7}\r\n'
+        '{6}\r\n'
         '\r\n'
-        '{8}'.format(
+        '{7}'.format(
             codeSetting[info['lang']]['prefix'],
             info['title'],
             codeSetting[info['lang']]['middle'],
             userName, 
             info['runtime'], 
-            info['lang'],
-            copyright
+            info['lang'], 
             codeSetting[info['lang']]['suffix'],
             info['code']
             )
         )
-    print 'finished writeIntoFiles {0}.{1}'.format(
-            info['id'], 
-            info['title']
-        )
 
-def init():
+def init(session):
     from config import loginInfo
     #get csrf cookie
-    result = handleRequests('https://leetcode.com/accounts/login/').text
+    result = handleRequests(session, 'https://leetcode.com/accounts/login/').text
     #init problemsType
     problemsType = re.findall(r'problemset/(.*)/">', result)
     #get csrf value
@@ -103,29 +95,58 @@ def init():
         loginInfo['password'] = sys.argv[2]
     return problemsType
 
+def worker(userName, finished, cur, lock, session, processId):
+    index = -1
+    while True:
+        with lock:
+            if index != -1:
+                print 'Problem ' + str(finished[index]['id']) + ' done! '
+            if cur.value >= len(finished):
+                break
+            else:
+                index = cur.value
+                cur.value += 1
+                print 'Process ' + str(processId) + ' fetch Problem ' + str(finished[index]['id'])
+        temp = finished[index]
+        getLatestAnswer(temp, session)
+        save(userName, temp, userName)
+
 if __name__=='__main__':
+    import datetime
+    begin = datetime.datetime.now()
 
     with requests.Session() as session:
         session.keep_alive = False
         finished = []
-
         #init
-        problemsType = init()      
+        problemsType = init(session)      
 
         #login & get cookie
-        userName = login()
+        userName = login(session)
         if userName != '':
-            print userName + ' login success'
+            print userName + ' login success! '
         else:
-            print 'login failed'
+            print 'Login failed! '
             exit(0)
 
         #init problem list
         for i in range(len(problemsType)):
-            apiRet = json.loads(handleRequests('https://leetcode.com/api/problems/{0}/'.format(problemsType[i])).text)
+            apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/problems/{0}/'.format(problemsType[i])).text)
             addToFinishedList(finished, apiRet)
-        print 'finished ' + str(len(finished)) + ' problem(s)'
+        print 'Total ' + str(len(finished)) + ' problem(s). '
 
-        for i in range(len(finished)):
-            getLatestAnswer(finished, i)
-            save(userName, finished[i], userName)
+        from config import processCountLimit
+        manager = multiprocessing.Manager()
+        cur = manager.Value('i', 0)
+        lock = manager.Lock()
+        processId = 0
+        pool = multiprocessing.Pool(processes = processCountLimit)
+        for processId in range(processCountLimit):
+            pool.apply_async(worker, (userName, finished, cur, lock, session, processId, ))
+        pool.close()
+        pool.join()
+        
+        print 'Job Done. '
+        print 'Time ' + str(datetime.datetime.now() - begin)
+
+        #0:17:12.863
