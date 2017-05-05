@@ -107,9 +107,8 @@ def worker(userName, finished, cur, lock, session, processId):
                 index = cur.value
                 cur.value += 1
                 print 'Process ' + str(processId) + ' fetch Problem ' + str(finished[index]['id'])
-        temp = finished[index]
-        getLatestAnswer(temp, session)
-        save(userName, temp, userName)
+        getLatestAnswer(finished[index], session)
+        save(userName, finished[index], userName)
 
 if __name__=='__main__':
     import datetime
@@ -135,6 +134,15 @@ if __name__=='__main__':
             addToFinishedList(finished, apiRet)
         print 'Total ' + str(len(finished)) + ' problem(s). '
 
+        if len(sys.argv) == 4:
+            for index in range(len(finished)):
+                if finished[index]['id'] == int(sys.argv[3]):
+                    print 'Process 0 fetch Problem ' + str(finished[index]['id'])
+                    getLatestAnswer(finished[index], session)
+                    save(userName, finished[index], userName)
+                    print 'Problem ' + str(finished[index]['id']) + ' done! '
+                    exit(0)
+
         from config import processCountLimit
         manager = multiprocessing.Manager()
         cur = manager.Value('i', 0)
@@ -148,5 +156,3 @@ if __name__=='__main__':
         
         print 'Job Done. '
         print 'Time ' + str(datetime.datetime.now() - begin)
-
-        #0:17:12.863
