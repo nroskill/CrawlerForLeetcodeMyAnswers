@@ -42,14 +42,16 @@ def addToFinishedList(finished, apiRet):
 def getLatestAnswer(info, session):
     apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/submissions/{0}/?format=json'.format(info['title'])).text)
     url = ''
+    ret = {}
     for i in apiRet['submissions_dump']:
         if i['status_display'] == 'Accepted':
-            info['lang'] = i['lang'].encode('utf-8')
-            info['runtime'] = i['runtime'].encode('utf-8')
+            ret['lang'] = i['lang'].encode('utf-8')
+            ret['runtime'] = i['runtime'].encode('utf-8')
             url = i['url']
             break
     htmlText = handleRequests(session, 'https://leetcode.com' + url).text
-    info['code'] = re.search(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'", htmlText).group(1).decode('unicode-escape', errors='ignore').encode('utf-8')
+    ret['code'] = re.search(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'", htmlText).group(1).decode('unicode-escape', errors='ignore').encode('utf-8')
+    return ret
 
 def save(path, info, userName):
     from config import codeSetting
@@ -107,7 +109,7 @@ def worker(userName, finished, cur, lock, session, processId):
                 index = cur.value
                 cur.value += 1
                 print 'Process ' + str(processId) + ' fetch Problem ' + str(finished[index]['id'])
-        getLatestAnswer(finished[index], session)
+        finished[index].update(getLatestAnswer(finished[index], session))
         save(userName, finished[index], userName)
 
 if __name__=='__main__':
@@ -138,7 +140,7 @@ if __name__=='__main__':
             for index in range(len(finished)):
                 if finished[index]['id'] == int(sys.argv[3]):
                     print 'Process 0 fetch Problem ' + str(finished[index]['id'])
-                    getLatestAnswer(finished[index], session)
+                    finished[index].update(getLatestAnswer(finished[index], session))
                     save(userName, finished[index], userName)
                     print 'Problem ' + str(finished[index]['id']) + ' done! '
                     exit(0)
