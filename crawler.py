@@ -39,7 +39,7 @@ def addToFinishedList(finished, apiRet):
         if pro['status'] == 'ac':
             finished.append({'id': pro['stat']['question_id'], 'title': pro['stat']['question__title_slug'].encode('utf-8')})
 
-def getLatestAnswer(info, session):
+def getLatestAnswer(info, session, searcher):
     apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/submissions/{0}/?format=json'.format(info['title'])).text)
     url = ''
     ret = {}
@@ -50,7 +50,7 @@ def getLatestAnswer(info, session):
             url = i['url']
             break
     htmlText = handleRequests(session, 'https://leetcode.com' + url).text
-    ret['code'] = re.search(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'", htmlText).group(1).decode('unicode-escape', errors='ignore').encode('utf-8')
+    ret['code'] = searcher.search(htmlText).group(1).decode('unicode-escape', errors='ignore').encode('utf-8')
     return ret
 
 def save(path, info, userName):
@@ -97,7 +97,7 @@ def init(session):
         loginInfo['password'] = sys.argv[2]
     return problemsType
 
-def worker(userName, finished, cur, lock, session, processId):
+def worker(userName, finished, cur, lock, session, processId, searcher):
     index = -1
     while True:
         with lock:
@@ -109,7 +109,7 @@ def worker(userName, finished, cur, lock, session, processId):
                 index = cur.value
                 cur.value += 1
                 print 'Process ' + str(processId) + ' fetch Problem ' + str(finished[index]['id'])
-        finished[index].update(getLatestAnswer(finished[index], session))
+        finished[index].update(getLatestAnswer(finished[index], session, searcher))
         save(userName, finished[index], userName)
 
 if __name__=='__main__':
@@ -119,6 +119,7 @@ if __name__=='__main__':
     with requests.Session() as session:
         session.keep_alive = False
         finished = []
+        searcher = re.compile(r"submissionCode:\s*'(.*)',\s*editCodeUrl:\s*'")
         #init
         problemsType = init(session)      
 
@@ -140,19 +141,19 @@ if __name__=='__main__':
             for index in range(len(finished)):
                 if finished[index]['id'] == int(sys.argv[3]):
                     print 'Process 0 fetch Problem ' + str(finished[index]['id'])
-                    finished[index].update(getLatestAnswer(finished[index], session))
+                    finished[index].update(getLatestAnswer(finished[index], session, searcher))
                     save(userName, finished[index], userName)
                     print 'Problem ' + str(finished[index]['id']) + ' done! '
                     exit(0)
 
-        from config import processCountLimit
+        from config import ConcurrencyCountLimit
         manager = multiprocessing.Manager()
         cur = manager.Value('i', 0)
         lock = manager.Lock()
         processId = 0
-        pool = multiprocessing.Pool(processes = processCountLimit)
-        for processId in range(processCountLimit):
-            pool.apply_async(worker, (userName, finished, cur, lock, session, processId, ))
+        pool = multiprocessing.Pool(processes = ConcurrencyCountLimit)
+        for processId in range(ConcurrencyCountLimit):
+            pool.apply_async(worker, (userName, finished, cur, lock, session, processId, searcher, ))
         pool.close()
         pool.join()
         
