@@ -92,7 +92,7 @@ def init(session):
     #get csrf value
     loginInfo['csrfmiddlewaretoken'] = re.search(r"csrfmiddlewaretoken'\s*value='(.*)'", result).group(1)
     #handle main argv
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         loginInfo['login'] = sys.argv[1]
         loginInfo['password'] = sys.argv[2]
     return problemsType
@@ -137,9 +137,9 @@ if __name__=='__main__':
             addToFinishedList(finished, apiRet)
         print 'Total ' + str(len(finished)) + ' problem(s). '
 
-        if len(sys.argv) == 4:
+        if len(sys.argv) % 2 == 0:
             for index in range(len(finished)):
-                if finished[index]['id'] == int(sys.argv[3]):
+                if finished[index]['id'] == int(sys.argv[len(sys.argv) - 1]):
                     print 'Process 0 fetch Problem ' + str(finished[index]['id'])
                     finished[index].update(getLatestAnswer(finished[index], session, searcher))
                     save(userName, finished[index], userName)
