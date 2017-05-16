@@ -1,14 +1,15 @@
 #encoding:utf-8
 proxies = {
-#    "https": "http://127.0.0.1:1080"
+    "https": "http://127.0.0.1:1080"
 }
 
 loginInfo = {
-    "login": "", 
-    "password": ""
+    "login": "nroskill", 
+    "password": "810211"
 }
 
-#请勿修改下面的内容
+ConcurrencyCountLimit = 10
+
 headers = {
     "Host": "leetcode.com", 
     "Referer": "https://leetcode.com", 
@@ -85,5 +86,3 @@ codeSetting = {
         'suffix': '# '
     } 
 }
-
-ConcurrencyCountLimit = 10
