@@ -55,15 +55,14 @@ def getLatestAnswer(info, session, searcher):
 
 def save(path, info, userName):
     from config import codeSetting
-    if os.path.exists(path) == False:
-        os.mkdir(path)
+    path = '{0}/{1}.{2}{3}'.format(
+        path, 
+        info['id'], 
+        info['title'], 
+        codeSetting[info['lang']]['extensionname']
+    )
     writeIntoFiles(
-        '{0}/{1}.{2}{3}'.format(
-            path, 
-            info['id'], 
-            info['title'], 
-            codeSetting[info['lang']]['extensionname']
-            ),
+        path,      
         '{0}\r\n'
         '{2}https://leetcode.com/problems/{1}/\r\n'
         '{2}By {3}\r\n'
@@ -97,10 +96,20 @@ def init(session):
         loginInfo['password'] = sys.argv[2]
     return problemsType
 
+def judgeExists(info, path):
+    l = os.listdir(path)
+    for i in l:
+        if int(i[0:i.find('.')]) == info['id']:
+            return True
+    return False
+
 def worker(userName, finished, cur, lock, session, processId, searcher):
+    from config import codeSetting
     index = -1
     while True:
         with lock:
+            while judgeExists(finished[cur.value], userName) == True:
+                cur.value += 1
             if index != -1:
                 print 'Problem ' + str(finished[index]['id']) + ' done! '
             if cur.value >= len(finished):
@@ -131,6 +140,9 @@ if __name__=='__main__':
             print 'Login failed! '
             exit(0)
 
+        if os.path.exists(userName) == False:
+            os.mkdir(userName)
+        before = set(os.listdir(userName))
         #init problem list
         for i in range(len(problemsType)):
             apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/problems/{0}/'.format(problemsType[i])).text)
@@ -151,11 +163,16 @@ if __name__=='__main__':
         cur = manager.Value('i', 0)
         lock = manager.Lock()
         processId = 0
+
         pool = multiprocessing.Pool(processes = ConcurrencyCountLimit)
         for processId in range(ConcurrencyCountLimit):
             pool.apply_async(worker, (userName, finished, cur, lock, session, processId, searcher, ))
         pool.close()
         pool.join()
-        
-        print 'Job Done. '
+        after = set(os.listdir(userName))
+        result = after - before
+        print 'Job Done, finished ' + str(len(result)) +' problem(s). '
         print 'Time ' + str(datetime.datetime.now() - begin)
+        print 'Following file(s) added. '
+        for i in result:
+            print i
