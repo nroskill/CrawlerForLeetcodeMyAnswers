@@ -13,12 +13,16 @@ def handleRequests(session, url, method = 'GET', data = None):
     from config import proxies
     from config import headers
     result = ''
-    if method == 'GET':
-        result = session.get(url, headers = headers, data = data, proxies = proxies)
-    elif method == 'POST':
-        result = session.post(url, headers = headers, data = data, proxies = proxies)
-    else:
-        return None
+    try:
+        if method == 'GET':
+            result = session.get(url, headers = headers, data = data, proxies = proxies)
+        elif method == 'POST':
+            result = session.post(url, headers = headers, data = data, proxies = proxies)
+        else:
+            return None
+    except:
+        print 'Connection Failed, you may set proxy in config.json. '
+        exit(0)
     return result
 
 def writeIntoFiles(filepath, content):
