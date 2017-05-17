@@ -19,3 +19,21 @@ python crawler.py [username password][problem_id]
 * 语言相关设置（一般不用改）
 
 **注：会优先使用参数中的用户名和密码**
+
+例如 只爬取题目id为100的题（需要修改config.json中的login和password）
+
+```
+python crawler.py 100
+```
+
+例如 在参数中使用用户名和密码爬取
+
+```
+python crawler.py nroskill 123456
+```
+
+也可以同时使用
+
+```
+python crawler.py nroskill 123456 100
+```
