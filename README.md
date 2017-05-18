@@ -1,5 +1,7 @@
 # CrawlerForLeetcodeMyAnswers
 
+支持的Python版本：2.7.12
+
 使用方法：
 
 ```
