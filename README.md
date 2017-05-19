@@ -1,6 +1,8 @@
 # CrawlerForLeetcodeMyAnswers
 
-支持的Python版本：2.7.12
+支持的、经过测试的Python版本：
+* 2.7.12
+* 3.6.1
 
 使用方法：
 

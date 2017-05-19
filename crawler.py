@@ -21,7 +21,7 @@ def handleRequests(session, url, method = 'GET', data = None):
         else:
             return None
     except:
-        print 'Connection Failed, you may set proxy in config.json. '
+        print('Connection Failed, you may set proxy in config.json. ')
         exit(0)
     return result
 
@@ -41,7 +41,7 @@ def login(session):
 def addToFinishedList(finished, apiRet):
     for pro in apiRet['stat_status_pairs']:
         if pro['status'] == 'ac':
-            finished.append({'id': pro['stat']['question_id'], 'title': pro['stat']['question__title_slug'].encode('utf-8')})
+            finished.append({'id': pro['stat']['question_id'], 'title': pro['stat']['question__title_slug']})
 
 def getLatestAnswer(info, session, searcher):
     apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/submissions/{0}/?format=json'.format(info['title'])).text)
@@ -49,12 +49,12 @@ def getLatestAnswer(info, session, searcher):
     ret = {}
     for i in apiRet['submissions_dump']:
         if i['status_display'] == 'Accepted':
-            ret['lang'] = i['lang'].encode('utf-8')
-            ret['runtime'] = i['runtime'].encode('utf-8')
+            ret['lang'] = i['lang']
+            ret['runtime'] = i['runtime']
             url = i['url']
             break
     htmlText = handleRequests(session, 'https://leetcode.com' + url).text
-    ret['code'] = searcher.search(htmlText).group(1).decode('unicode-escape', errors='ignore').encode('utf-8')
+    ret['code'] = searcher.search(htmlText).group(1).encode('utf-8').decode('unicode_escape')
     return ret
 
 def save(path, info, userName):
@@ -115,13 +115,13 @@ def worker(userName, finished, cur, lock, session, processId, searcher):
             while judgeExists(finished[cur.value], userName) == True:
                 cur.value += 1
             if index != -1:
-                print 'Problem ' + str(finished[index]['id']) + ' done! '
+                print('Problem ' + str(finished[index]['id']) + ' done! ')
             if cur.value >= len(finished):
                 break
             else:
                 index = cur.value
                 cur.value += 1
-                print 'Process ' + str(processId) + ' fetch Problem ' + str(finished[index]['id'])
+                print('Process ' + str(processId) + ' fetch Problem ' + str(finished[index]['id']))
         finished[index].update(getLatestAnswer(finished[index], session, searcher))
         save(userName, finished[index], userName)
 
@@ -139,9 +139,9 @@ if __name__=='__main__':
         #login & get cookie
         userName = login(session)
         if userName != '':
-            print userName + ' login success! '
+            print(userName + ' login success! ')
         else:
-            print 'Login failed! '
+            print('Login failed! ')
             exit(0)
 
         if os.path.exists(userName) == False:
@@ -151,15 +151,15 @@ if __name__=='__main__':
         for i in range(len(problemsType)):
             apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/problems/{0}/'.format(problemsType[i])).text)
             addToFinishedList(finished, apiRet)
-        print 'Total ' + str(len(finished)) + ' problem(s). '
+        print('Total ' + str(len(finished)) + ' problem(s). ')
 
         if len(sys.argv) % 2 == 0:
             for index in range(len(finished)):
                 if finished[index]['id'] == int(sys.argv[len(sys.argv) - 1]):
-                    print 'Process 0 fetch Problem ' + str(finished[index]['id'])
+                    print('Process 0 fetch Problem ' + str(finished[index]['id']))
                     finished[index].update(getLatestAnswer(finished[index], session, searcher))
                     save(userName, finished[index], userName)
-                    print 'Problem ' + str(finished[index]['id']) + ' done! '
+                    print('Problem ' + str(finished[index]['id']) + ' done! ')
                     exit(0)
 
         from config import ConcurrencyCountLimit
@@ -167,7 +167,7 @@ if __name__=='__main__':
         cur = manager.Value('i', 0)
         lock = manager.Lock()
         processId = 0
-
+        
         pool = multiprocessing.Pool(processes = ConcurrencyCountLimit)
         for processId in range(ConcurrencyCountLimit):
             pool.apply_async(worker, (userName, finished, cur, lock, session, processId, searcher, ))
@@ -175,8 +175,8 @@ if __name__=='__main__':
         pool.join()
         after = set(os.listdir(userName))
         result = after - before
-        print 'Job Done, finished ' + str(len(result)) +' problem(s). '
-        print 'Time ' + str(datetime.datetime.now() - begin)
-        print 'Following file(s) added. '
+        print('Job Done, finished ' + str(len(result)) +' problem(s). ')
+        print('Time ' + str(datetime.datetime.now() - begin))
+        print('Following file(s) added. ')
         for i in result:
-            print i
+            print(i)
