@@ -18,6 +18,8 @@ python crawler.py [username password][problem_id]
 
 * 代理
 * 登陆信息
+* 语言类型限制（如果本地存在该题的任意语言的答案，也不会重新爬取）
+* 输出文件的编码类型
 * 并发数上限（多进程）
 * header（一般不用改）
 * 语言相关设置（一般不用改）
