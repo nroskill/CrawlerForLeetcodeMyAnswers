@@ -1,14 +1,16 @@
 #encoding:utf-8
 proxies = {
-    "https": "http://127.0.0.1:1080"
+#    "https": "http://127.0.0.1:1080"
 }
 
 loginInfo = {
-    "login": "nroskill", 
-    "password": "810211"
+    "login": "", 
+    "password": ""
 }
 
 ConcurrencyCountLimit = 10
+
+encoding = 'utf-8'
 
 headers = {
     "Host": "leetcode.com", 

@@ -4,7 +4,6 @@
 
 import json
 import multiprocessing
-import os
 import re
 import requests
 import sys
@@ -26,8 +25,9 @@ def handleRequests(session, url, method = 'GET', data = None):
     return result
 
 def writeIntoFiles(filepath, content):
-    with open(filepath, 'w') as f:
-        f.write(content)
+    from config import encoding
+    with open(filepath, 'wb') as f:
+        f.write(content.encode(encoding))
 
 def login(session):
     from config import loginInfo
@@ -101,6 +101,7 @@ def init(session):
     return problemsType
 
 def judgeExists(info, path):
+    import os
     l = os.listdir(path)
     for i in l:
         if int(i[0:i.find('.')]) == info['id']:
@@ -127,6 +128,7 @@ def worker(userName, finished, cur, lock, session, processId, searcher):
 
 if __name__=='__main__':
     import datetime
+    import os
     begin = datetime.datetime.now()
 
     with requests.Session() as session:
