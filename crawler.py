@@ -44,21 +44,26 @@ def addToFinishedList(finished, apiRet):
             finished.append({'id': pro['stat']['question_id'], 'title': pro['stat']['question__title_slug']})
 
 def getLatestAnswer(info, session, searcher):
+    from config import languageLimit
     apiRet = json.loads(handleRequests(session, 'https://leetcode.com/api/submissions/{0}/?format=json'.format(info['title'])).text)
     url = ''
     ret = {}
     for i in apiRet['submissions_dump']:
-        if i['status_display'] == 'Accepted':
+        if i['status_display'] == 'Accepted' and ( len(languageLimit) == 0 or i['lang'] in languageLimit ):
             ret['lang'] = i['lang']
             ret['runtime'] = i['runtime']
             url = i['url']
             break
+    if url == '':
+        return ret
     htmlText = handleRequests(session, 'https://leetcode.com' + url).text
     ret['code'] = searcher.search(htmlText).group(1).encode('utf-8').decode('unicode_escape')
     return ret
 
 def save(path, info, userName):
     from config import codeSetting
+    if 'code' not in info:
+        return False
     path = '{0}/{1}.{2}{3}'.format(
         path, 
         info['id'], 
@@ -85,6 +90,7 @@ def save(path, info, userName):
             info['code']
             )
         )
+    return True
 
 def init(session):
     from config import loginInfo
@@ -111,11 +117,12 @@ def judgeExists(info, path):
 def worker(userName, finished, cur, lock, session, processId, searcher):
     from config import codeSetting
     index = -1
+    j = False
     while True:
         with lock:
             while judgeExists(finished[cur.value], userName) == True:
                 cur.value += 1
-            if index != -1:
+            if j == True and index != -1:
                 print('Problem ' + str(finished[index]['id']) + ' done! ')
             if cur.value >= len(finished):
                 break
@@ -124,7 +131,7 @@ def worker(userName, finished, cur, lock, session, processId, searcher):
                 cur.value += 1
                 print('Process ' + str(processId) + ' fetch Problem ' + str(finished[index]['id']))
         finished[index].update(getLatestAnswer(finished[index], session, searcher))
-        save(userName, finished[index], userName)
+        j = save(userName, finished[index], userName)
 
 if __name__=='__main__':
     import datetime
@@ -160,8 +167,11 @@ if __name__=='__main__':
                 if finished[index]['id'] == int(sys.argv[len(sys.argv) - 1]):
                     print('Process 0 fetch Problem ' + str(finished[index]['id']))
                     finished[index].update(getLatestAnswer(finished[index], session, searcher))
-                    save(userName, finished[index], userName)
-                    print('Problem ' + str(finished[index]['id']) + ' done! ')
+                    result = save(userName, finished[index], userName)
+                    if result == True:
+                        print('Problem ' + str(finished[index]['id']) + ' done! ')
+                    else:
+                        print('No answer was found according to your settings. ')
                     exit(0)
 
         from config import ConcurrencyCountLimit

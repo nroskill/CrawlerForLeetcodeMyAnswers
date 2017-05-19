@@ -8,9 +8,23 @@ loginInfo = {
     "password": ""
 }
 
-ConcurrencyCountLimit = 10
+languageLimit = [
+    'cpp',
+    'java',
+    'python',
+    'c',
+    'csharp',
+    'javascript',
+    'ruby',
+    'swift',
+    'golang',
+    'mysql',
+    'bash'
+]
 
 encoding = 'utf-8'
+
+ConcurrencyCountLimit = 10
 
 headers = {
     "Host": "leetcode.com", 
