@@ -36,7 +36,7 @@ def login(session):
     if loginResult.find(r'form class="form-signin"') >= 0:
         return ''
     else:
-        return re.search(r'<a href="#" class="dropdown-toggle" data-toggle="dropdown">\s*(\w*)\s*<span class="caret"></span>', loginResult).group(1)
+        return re.search(r'</span>\s*(\w*)\s*<span class="caret"></span>', loginResult).group(1)
 
 def addToFinishedList(finished, apiRet):
     for pro in apiRet['stat_status_pairs']:
